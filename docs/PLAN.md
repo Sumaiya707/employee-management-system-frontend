@@ -16,6 +16,7 @@ The frontend and the backend are separate repositories that make up **one** appl
 | T11 | Three role dashboards (`admin`, `organisation`, `personal` layouts of `GET /api/dashboard`) | T7, T10 | Implemented |
 | T12 | Pages: My Profile, Employees, Attendance, Leave, User Accounts, Roles & Permissions | T4–T7d, T10 | Implemented |
 | T12b | Per-user permission overrides page (`GET/PATCH /api/users/:id/permissions`) | T5 | Not Started |
+| T12c | Departments and Designations pages; department and designation on the employee form, details, list (column + filter) and My Profile | T7e | Implemented |
 
 **"Implemented" means built, linted and production-built.** Logged-in pages still need a manual run with real accounts for each role before they can be marked Tested (see the README checklist).
 
@@ -51,7 +52,6 @@ Self-service actions (clock in/out, request leave) are shown only when `GET /api
 | Missing in the backend | Effect in the frontend |
 |---|---|
 | Activity log list endpoint (only dashboard sections exist) | Activity is shown on dashboards only; no Activity Log page |
-| Departments and designations APIs (permissions exist, no routes) | No pages, no fields |
 | Reports API (`reports:view` exists, no routes) | No Reports page |
 | Password reset by email / forgot password | No "Forgot password" link; administrators reset passwords |
 | Leave balances / leave types management (`leave:manage` exists, no routes) | Leave types are the fixed backend list |

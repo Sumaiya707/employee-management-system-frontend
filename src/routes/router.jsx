@@ -9,6 +9,8 @@ import { RouteErrorPage } from '@/pages/RouteErrorPage'
 import {
   AttendancePage,
   DashboardPage,
+  DepartmentsPage,
+  DesignationsPage,
   EmployeeDetailPage,
   EmployeeFormPage,
   EmployeesPage,
@@ -54,6 +56,8 @@ export const router = createBrowserRouter([
               { path: 'employees/:id/edit', element: guarded('employees:update', <EmployeeFormPage />) },
               { path: 'attendance', element: guarded('attendance:view', <AttendancePage />) },
               { path: 'leave', element: guarded('leave:view', <LeavePage />) },
+              { path: 'departments', element: guarded('departments:view', <DepartmentsPage />) },
+              { path: 'designations', element: guarded('designations:view', <DesignationsPage />) },
               { path: 'users', element: guarded('users:view', <UsersPage />) },
               { path: 'roles', element: guarded('roles:view', <RolesPage />) },
               { path: 'roles/new', element: guarded('roles:manage', <RoleFormPage />) },

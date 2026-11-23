@@ -11,11 +11,12 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useSession } from '@/features/auth/useSession'
+import { useListDepartmentsQuery } from '@/features/departments/departmentsApi'
 import { useListParams } from '@/hooks/useListParams'
 import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_TYPE_LABELS, formatDate, fullName, labelFor } from '@/lib/format'
 import { useListEmployeesQuery } from './employeesApi'
 
-const DEFAULTS = { search: '', status: '', employmentStatus: '', sort: 'employeeCode' }
+const DEFAULTS = { search: '', status: '', employmentStatus: '', departmentId: '', sort: 'employeeCode' }
 
 const SORT_OPTIONS = [
   { value: 'employeeCode', label: 'Sort: Employee ID' },
@@ -32,11 +33,22 @@ export default function EmployeesPage() {
   // Used as the search box key: "Clear filters" adds 1, which gives a fresh, empty box.
   const [searchResetCount, setSearchResetCount] = useState(0)
   const employees = useListEmployeesQuery({ ...params, limit: 10 })
+  // The Department filter is shown only to users who may see departments.
+  const canViewDepartments = can('departments:view')
+  const departments = useListDepartmentsQuery({ limit: 100, sort: 'name' }, { skip: !canViewDepartments })
 
-  const filtered = Boolean(params.search || params.status || params.employmentStatus)
+  const filtered = Boolean(params.search || params.status || params.employmentStatus || params.departmentId)
+
+  // Choices for the Department filter: "All departments", then every department.
+  const departmentOptions = [{ value: '', label: 'All departments' }]
+  if (departments.data) {
+    for (const department of departments.data.items) {
+      departmentOptions.push({ value: department.id, label: department.name })
+    }
+  }
 
   function clearFilters() {
-    clear(['search', 'status', 'employmentStatus'])
+    clear(['search', 'status', 'employmentStatus', 'departmentId'])
     setSearchResetCount((count) => count + 1)
   }
 
@@ -77,6 +89,15 @@ export default function EmployeesPage() {
             onChange={(value) => setParam('employmentStatus', value)}
             options={[{ value: '', label: 'Any job status' }, ...Object.entries(EMPLOYMENT_STATUS_LABELS).map(([value, label]) => ({ value, label }))]}
           />
+          {canViewDepartments ? (
+            <FilterSelect
+              id="filter-department"
+              label="Department"
+              value={params.departmentId}
+              onChange={(value) => setParam('departmentId', value)}
+              options={departmentOptions}
+            />
+          ) : null}
           <FilterSelect id="sort" label="Sort order" value={params.sort} onChange={(value) => setParam('sort', value)} options={SORT_OPTIONS} className="sm:ml-auto" />
         </ListToolbar>
 
@@ -106,6 +127,7 @@ export default function EmployeesPage() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Employee ID</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Department</TableHead>
                   <TableHead>Job title</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Job status</TableHead>
@@ -135,6 +157,7 @@ export default function EmployeesPage() {
                         </div>
                       </div>
                     </TableCell>
+                    <TableCell className="text-muted-foreground">{employee.department ? employee.department.name : '—'}</TableCell>
                     <TableCell>{employee.jobTitle}</TableCell>
                     <TableCell className="text-muted-foreground">{labelFor(EMPLOYMENT_TYPE_LABELS, employee.employmentType)}</TableCell>
                     <TableCell>

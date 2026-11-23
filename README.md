@@ -35,14 +35,15 @@
 | Navigation | Sidebar (desktop) and drawer (mobile) show only pages allowed by the user's permissions; every route is guarded too |
 | Dashboards | Super Admin (`admin`), HR (`organisation`) and Employee (`personal`) layouts from `GET /api/dashboard` |
 | My Profile | Account and employment details; edit own phone, address, emergency contact; change password |
-| Employees | List with search, filters, sorting, pagination; details; create (with login account); edit; activate / deactivate; reset password |
+| Employees | List with search, filters (incl. department), sorting, pagination; details; create (with login account); edit, incl. department and designation; activate / deactivate; reset password |
+| Departments, Designations | List with search and status filter; HR / Super Admin: add, edit, activate / deactivate (never delete). Employees with the view permission see a read-only list |
 | Attendance | Clock in / out (employees with a record); own or organisation records; HR correction with note |
 | Leave | Request, cancel own pending request; HR review (approve / reject with note) |
 | User Accounts | Super Admin: create, edit, activate / deactivate, reset password for HR and admin accounts |
 | Roles & Permissions | Super Admin: list, create custom roles, edit permissions and data scope, activate / deactivate custom roles |
 | Theme | Light, dark and system mode, remembered in the browser |
 
-Not built because the backend has no API for it yet: activity log page, departments, designations, reports, forgot password. See [docs/PLAN.md](docs/PLAN.md).
+Not built because the backend has no API for it yet: activity log page, reports, forgot password. See [docs/PLAN.md](docs/PLAN.md).
 
 ---
 

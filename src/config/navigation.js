@@ -3,8 +3,18 @@
 // and the route itself is guarded with the same key (src/routes/router.jsx).
 //
 // Only implemented pages are listed. Backend permissions without an API yet
-// (departments, designations, reports, activity log list) have no page.
-import { CalendarClockIcon, CalendarDaysIcon, IdCardIcon, LayoutDashboardIcon, ShieldCheckIcon, UserCogIcon, UsersIcon } from 'lucide-react'
+// (reports, activity log list) have no page.
+import {
+  BriefcaseBusinessIcon,
+  Building2Icon,
+  CalendarClockIcon,
+  CalendarDaysIcon,
+  IdCardIcon,
+  LayoutDashboardIcon,
+  ShieldCheckIcon,
+  UserCogIcon,
+  UsersIcon,
+} from 'lucide-react'
 
 export const NAV_SECTIONS = [
   {
@@ -21,6 +31,13 @@ export const NAV_SECTIONS = [
       // Labels change with the data scope: "self" users only see their own records.
       { to: '/attendance', label: 'Attendance', selfLabel: 'My Attendance', icon: CalendarClockIcon, permission: 'attendance:view' },
       { to: '/leave', label: 'Leave Requests', selfLabel: 'My Leave', icon: CalendarDaysIcon, permission: 'leave:view' },
+    ],
+  },
+  {
+    title: 'Organisation',
+    items: [
+      { to: '/departments', label: 'Departments', icon: Building2Icon, permission: 'departments:view' },
+      { to: '/designations', label: 'Designations', icon: BriefcaseBusinessIcon, permission: 'designations:view' },
     ],
   },
   {

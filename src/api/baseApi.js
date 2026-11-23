@@ -70,7 +70,7 @@ export const baseApi = createApi({
   baseQuery: baseQueryWithSession,
   // Labels for cached data. A query "provides" a label (e.g. 'Employee'); a
   // change "invalidates" it, and RTK Query then loads that data again.
-  tagTypes: ['Session', 'Dashboard', 'Profile', 'Employee', 'Attendance', 'Leave', 'User', 'Role', 'Permission'],
+  tagTypes: ['Session', 'Dashboard', 'Profile', 'Employee', 'Attendance', 'Leave', 'User', 'Role', 'Permission', 'Department', 'Designation'],
   // Data can change from other people's work; refresh lists when they are shown again.
   // (Reload when a page opens if the cached answer is older than 30 seconds.)
   refetchOnMountOrArgChange: 30,

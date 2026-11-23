@@ -69,6 +69,8 @@ export default function ProfilePage() {
                 <DetailList
                   items={[
                     { label: 'Employee ID', value: '#' + employee.employeeCode },
+                    { label: 'Department', value: employee.department ? employee.department.name : null },
+                    { label: 'Designation', value: employee.designation ? employee.designation.name : null },
                     { label: 'Job title', value: employee.jobTitle },
                     { label: 'Employment type', value: labelFor(EMPLOYMENT_TYPE_LABELS, employee.employmentType) },
                     { label: 'Joining date', value: formatDate(employee.joiningDate) },

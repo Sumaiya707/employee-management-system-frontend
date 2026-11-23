@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSession } from '@/features/auth/useSession'
 import { normalizeError } from '@/lib/apiError'
-import { EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, formatDate, formatDateTime, fullName, labelFor } from '@/lib/format'
+import { EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, assignmentName, formatDate, formatDateTime, fullName, labelFor } from '@/lib/format'
 import { useGetEmployeeQuery, useResetEmployeePasswordMutation, useSetEmployeeStatusMutation } from './employeesApi'
 
 function BackLink() {
@@ -137,6 +137,8 @@ export default function EmployeeDetailPage() {
               <DetailList
                 items={[
                   { label: 'Employee ID', value: '#' + employee.employeeCode },
+                  { label: 'Department', value: assignmentName(employee.department) },
+                  { label: 'Designation', value: assignmentName(employee.designation) },
                   { label: 'Job title', value: employee.jobTitle },
                   { label: 'Employment type', value: labelFor(EMPLOYMENT_TYPE_LABELS, employee.employmentType) },
                   { label: 'Job status', value: <EmploymentStatusBadge status={employee.employmentStatus} /> },

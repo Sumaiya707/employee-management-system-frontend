@@ -49,6 +49,18 @@ export function fullName(person) {
   return [person.firstName, person.lastName].filter(Boolean).join(' ')
 }
 
+// An employee's department or designation ({ id, name, isActive } or null) as text.
+// null gives '' (shown as "—" by DetailList).
+export function assignmentName(item) {
+  if (!item) {
+    return ''
+  }
+  if (!item.isActive) {
+    return item.name + ' (inactive)'
+  }
+  return item.name
+}
+
 export function initials(person) {
   if (!person) {
     return '?'

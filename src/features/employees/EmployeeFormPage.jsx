@@ -17,6 +17,8 @@ import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Input, NativeSelect, Textarea } from '@/components/ui/input'
+import { useListDepartmentsQuery } from '@/features/departments/departmentsApi'
+import { useListDesignationsQuery } from '@/features/designations/designationsApi'
 import { applyFieldErrors, normalizeError } from '@/lib/apiError'
 import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, fullName, toDateInput } from '@/lib/format'
 import { errorAt, fieldA11y } from '@/lib/form'
@@ -45,6 +47,9 @@ const editSchema = z.object({
   gender: choice(GENDER_LABELS, 'Select a gender'),
   phone: requiredPhone,
   jobTitle: z.string().trim().min(1, 'Job title is required').max(100, 'Job title must be at most 100 characters'),
+  // Optional: '' means "not assigned" (sent to the backend as null).
+  department: z.string(),
+  designation: z.string(),
   employmentType: choice(EMPLOYMENT_TYPE_LABELS, 'Select an employment type'),
   employmentStatus: choice(EMPLOYMENT_STATUS_LABELS, 'Select a job status'),
   joiningDate: requiredDate('Joining date'),
@@ -74,6 +79,8 @@ const EMPTY = {
   gender: '',
   phone: '',
   jobTitle: '',
+  department: '',
+  designation: '',
   employmentType: '',
   employmentStatus: 'active',
   joiningDate: '',
@@ -84,6 +91,14 @@ const EMPTY = {
 
 function valuesFrom(employee) {
   const contact = employee.emergencyContact || {}
+  let departmentId = ''
+  if (employee.department) {
+    departmentId = employee.department.id
+  }
+  let designationId = ''
+  if (employee.designation) {
+    designationId = employee.designation.id
+  }
   return {
     firstName: employee.firstName,
     lastName: employee.lastName,
@@ -91,6 +106,8 @@ function valuesFrom(employee) {
     gender: employee.gender || '',
     phone: employee.phone || '',
     jobTitle: employee.jobTitle || '',
+    department: departmentId,
+    designation: designationId,
     employmentType: employee.employmentType || '',
     employmentStatus: employee.employmentStatus || 'active',
     joiningDate: toDateInput(employee.joiningDate),
@@ -115,9 +132,57 @@ function OptionList({ labels, placeholder }) {
   )
 }
 
+// The choices of the department or designation dropdown:
+//   listQuery  the result of useListDepartmentsQuery / useListDesignationsQuery (active ones only)
+//   current    the employee's current department or designation (null when creating)
+// The current one is always kept in the list, even if it became inactive,
+// so the edit form still shows what the employee has now.
+function assignmentOptions(listQuery, current) {
+  const options = []
+  let currentIsListed = false
+  if (listQuery.data) {
+    for (const item of listQuery.data.items) {
+      options.push({ id: item.id, name: item.name })
+      if (current && item.id === current.id) {
+        currentIsListed = true
+      }
+    }
+  }
+  if (current && !currentIsListed) {
+    let name = current.name
+    if (!current.isActive) {
+      name = name + ' (inactive)'
+    }
+    options.push({ id: current.id, name: name })
+  }
+  return options
+}
+
+// The first, empty choice of a department or designation dropdown.
+function emptyChoiceText(listQuery, loadingText, noneText) {
+  if (listQuery.isLoading) {
+    return loadingText
+  }
+  return noneText
+}
+
+// The hint under a department or designation dropdown, if something needs explaining.
+function assignmentHint(listQuery, options, failedText, emptyText) {
+  if (listQuery.isError) {
+    return failedText
+  }
+  if (listQuery.data && options.length === 0) {
+    return emptyText
+  }
+  return undefined
+}
+
 function EmployeeForm({ employee }) {
   const isEdit = Boolean(employee)
   const navigate = useNavigate()
+  // Only active departments and designations can be newly assigned.
+  const departments = useListDepartmentsQuery({ status: 'active', limit: 100, sort: 'name' })
+  const designations = useListDesignationsQuery({ status: 'active', limit: 100, sort: 'name' })
   const [createEmployee] = useCreateEmployeeMutation()
   const [updateEmployee] = useUpdateEmployeeMutation()
   const [formError, setFormError] = useState(null)
@@ -153,6 +218,8 @@ function EmployeeForm({ employee }) {
     gender: errorAt(errors, 'gender'),
     dateOfBirth: errorAt(errors, 'dateOfBirth'),
     jobTitle: errorAt(errors, 'jobTitle'),
+    department: errorAt(errors, 'department'),
+    designation: errorAt(errors, 'designation'),
     joiningDate: errorAt(errors, 'joiningDate'),
     employmentType: errorAt(errors, 'employmentType'),
     employmentStatus: errorAt(errors, 'employmentStatus'),
@@ -165,6 +232,17 @@ function EmployeeForm({ employee }) {
     password: errorAt(errors, 'password'),
   }
 
+  let currentDepartment = null
+  let currentDesignation = null
+  if (isEdit) {
+    currentDepartment = employee.department
+    currentDesignation = employee.designation
+  }
+  const departmentOptions = assignmentOptions(departments, currentDepartment)
+  const designationOptions = assignmentOptions(designations, currentDesignation)
+  const departmentHint = assignmentHint(departments, departmentOptions, 'Departments could not be loaded.', 'No active departments yet.')
+  const designationHint = assignmentHint(designations, designationOptions, 'Designations could not be loaded.', 'No active designations yet.')
+
   async function onSubmit(values) {
     setFormError(null)
     try {
@@ -175,6 +253,9 @@ function EmployeeForm({ employee }) {
           changes[key] = values[key]
         }
         if ('dateOfBirth' in changes && changes.dateOfBirth === '') changes.dateOfBirth = null
+        // An empty department / designation choice removes it (null).
+        if ('department' in changes && changes.department === '') changes.department = null
+        if ('designation' in changes && changes.designation === '') changes.designation = null
         if (Object.keys(changes).length === 0) {
           navigate('/employees/' + employee.id)
           return
@@ -185,6 +266,8 @@ function EmployeeForm({ employee }) {
       } else {
         const body = { ...values }
         if (body.dateOfBirth === '') delete body.dateOfBirth
+        if (body.department === '') body.department = null
+        if (body.designation === '') body.designation = null
         const created = await createEmployee(body).unwrap()
         toast.success('Employee created', { description: 'Login account ' + created.email + ' must change the temporary password at first login.' })
         navigate('/employees/' + created.id)
@@ -231,6 +314,26 @@ function EmployeeForm({ employee }) {
           </FormSection>
 
           <FormSection title="Employment">
+            <FormField id="department" label="Department" error={errorText.department} hint={departmentHint}>
+              <NativeSelect {...fieldA11y('department', errorText.department, departmentHint)} {...register('department')}>
+                <option value="">{emptyChoiceText(departments, 'Loading departments…', 'No department')}</option>
+                {departmentOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </FormField>
+            <FormField id="designation" label="Designation" error={errorText.designation} hint={designationHint}>
+              <NativeSelect {...fieldA11y('designation', errorText.designation, designationHint)} {...register('designation')}>
+                <option value="">{emptyChoiceText(designations, 'Loading designations…', 'No designation')}</option>
+                {designationOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </FormField>
             <FormField id="jobTitle" label="Job title" error={errorText.jobTitle} required>
               <Input {...fieldA11y('jobTitle', errorText.jobTitle)} {...register('jobTitle')} />
             </FormField>
