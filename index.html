@@ -4,7 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <meta name="description" content="PeopleDesk, the Employee Management System workplace portal." />
+    <title>PeopleDesk | Workplace Portal</title>
+    <script>
+      // Apply the saved light/dark choice before the page paints (no flash).
+      // Same storage key and logic as src/lib/theme.js.
+      (function () {
+        var choice = 'system';
+        try {
+          choice = localStorage.getItem('peopledesk-theme') || 'system';
+        } catch (error) {
+          choice = 'system';
+        }
+        var dark = choice === 'dark' || (choice === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

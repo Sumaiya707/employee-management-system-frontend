@@ -1,11 +1,12 @@
-# 🖥️ Employee Management System — Frontend
+# 🖥️ PeopleDesk — EMS Frontend
 
 **React user interface for the Employee Management System (EMS): login, role-based dashboards, employees, attendance and leave.**
 
-![React](https://img.shields.io/badge/React-19_(starter)-61DAFB?logo=react&logoColor=black)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-JSX-F7DF1E?logo=javascript&logoColor=black)
-![Status](https://img.shields.io/badge/Status-Starter_page_only-orange)
+![Status](https://img.shields.io/badge/Status-In_development-orange)
 
 > 🔗 **This is one half of one application.** All data comes from the EMS REST API in the backend repository: [employee-management-system](https://github.com/Sumaiya707/employee-management-system). The frontend never connects to MongoDB.
 
@@ -15,31 +16,42 @@
 
 | Document | What it contains |
 |---|---|
-| [docs/PLAN.md](docs/PLAN.md) | Frontend tasks (T8–T12), planned stack, page and sidebar rules |
-| [Backend API reference](https://github.com/Sumaiya707/employee-management-system/blob/main/docs/API.md) | Every endpoint this frontend will call |
+| [docs/PLAN.md](docs/PLAN.md) | Frontend tasks and status, connection contract, sidebar rule, backend features not available yet |
+| [docs/ASSETS.md](docs/ASSETS.md) | Source and licence of the login photograph |
+| [Backend API reference](https://github.com/Sumaiya707/employee-management-system/blob/main/docs/API.md) | Every endpoint this frontend calls |
 | [Backend README](https://github.com/Sumaiya707/employee-management-system/blob/main/README.md) | How to run the API and its databases |
 
 ---
 
 ## 📌 Current Status
 
-> ⚠️ **The user interface is not built yet.** This repository holds the Vite + React starter plus a backend health check. Building the real frontend is task **T8** (see [docs/PLAN.md](docs/PLAN.md)).
+> ⚠️ **Frontend development has started; the EMS is not complete.** The screens below are built against the real API. Logged-in screens have not yet been tested with real accounts (see the checklist at the end).
 
-| Part | Status |
+| Area | What works |
 |---|---|
-| Vite + React project, ESLint, build | ✅ Works (`npm run dev`, `npm run build`) |
-| Start page (`src/App.jsx`) | Calls `GET /api/health` through the Vite proxy (`src/api/health.js`) and shows **"Backend is running. Database: connected."**, the backend's error message for an HTTP error, or **"Backend problem: The backend did not answer ... Is it running?"** when the backend is down. T8 replaces this page |
-| Vite proxy (`vite.config.js`) | ✅ `/api` → `http://localhost:5000` in development |
-| Router, Redux Toolkit / RTK Query, Tailwind, shadcn/ui, React Hook Form, Zod, Recharts, Lucide, Sonner | ❌ Not installed yet (T8) |
-| Login, dashboards, employee, attendance and leave pages | ❌ Not built yet (T9–T12) |
+| Login | Split-screen page, email + password only, validation, show/hide password, backend error messages, "server unreachable" warning |
+| Session | Restored with `GET /api/auth/me` on reload; ends cleanly on any `401`; logout waits for the backend |
+| Forced password change | Users with `mustChangePassword` only see the change-password screen until they set their own password |
+| Navigation | Sidebar (desktop) and drawer (mobile) show only pages allowed by the user's permissions; every route is guarded too |
+| Dashboards | Super Admin (`admin`), HR (`organisation`) and Employee (`personal`) layouts from `GET /api/dashboard` |
+| My Profile | Account and employment details; edit own phone, address, emergency contact; change password |
+| Employees | List with search, filters, sorting, pagination; details; create (with login account); edit; activate / deactivate; reset password |
+| Attendance | Clock in / out (employees with a record); own or organisation records; HR correction with note |
+| Leave | Request, cancel own pending request; HR review (approve / reject with note) |
+| User Accounts | Super Admin: create, edit, activate / deactivate, reset password for HR and admin accounts |
+| Roles & Permissions | Super Admin: list, create custom roles, edit permissions and data scope, activate / deactivate custom roles |
+| Theme | Light, dark and system mode, remembered in the browser |
+
+Not built because the backend has no API for it yet: activity log page, departments, designations, reports, forgot password. See [docs/PLAN.md](docs/PLAN.md).
 
 ---
 
 ## 🚀 How It Works
 
 ```
-Browser ── React app (http://localhost:5173)          ← this repository
-              │  HTTP + JSON, cookies sent with credentials: "include"
+Browser ── PeopleDesk (http://localhost:5173)          ← this repository
+              │  /api/... with credentials: "include"
+              │  (Vite dev proxy → backend)
               ▼
            EMS REST API (http://localhost:5000/api)    ← backend repository
               │
@@ -47,31 +59,34 @@ Browser ── React app (http://localhost:5173)          ← this repository
            MongoDB Atlas
 ```
 
-- **Login session:** the backend sets an `HttpOnly` cookie `ems_token`. JavaScript cannot read it; the browser sends it automatically when requests use `credentials: "include"`.
-- **Who is logged in:** `GET /api/auth/me` returns the user, role and `permissions`. The planned sidebar shows only pages whose permission is in that list. The backend still checks every request.
-- **CORS:** the backend accepts browser requests only from its `CLIENT_URL` setting, which is `http://localhost:5173` in development.
+- **Login session:** the backend sets an `HttpOnly` cookie `ems_token`. JavaScript cannot read it, and the app never stores a token anywhere.
+- **Who is logged in:** `GET /api/auth/me` returns the user, role and `permissions`. Pages and actions are shown from that list; the backend still checks every request.
+- **Roles:** Super Admin, HR and Employee (custom roles also work, because everything is driven by permission keys, not role names).
+- **CORS / CSRF:** the backend accepts browser requests only from its `CLIENT_URL`, `http://localhost:5173` in development.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Area | Installed now | Planned (T8) |
-|---|---|---|
-| UI library | React 19 (from the starter) | React 18 |
-| Build tool | Vite 8 | Vite |
-| Routing | — | React Router v6 |
-| State and API calls | — | Redux Toolkit + RTK Query |
-| Forms and validation | — | React Hook Form + Zod |
-| Styling and components | Plain CSS | Tailwind CSS + shadcn/ui |
-| Charts, icons, toasts | — | Recharts, Lucide, Sonner |
-| Linting | ESLint 10 | ESLint |
+| Area | Library |
+|---|---|
+| UI | React 19, JavaScript (JSX) |
+| Build tool | Vite 8 (`@vitejs/plugin-react`) |
+| Routing | React Router 8 (needs Node.js 22.22 or newer) |
+| State and API calls | Redux Toolkit 2 + RTK Query |
+| Forms and validation | React Hook Form 7 + Zod 4 (`@hookform/resolvers`) |
+| Styling | Tailwind CSS 4 with colour tokens for light and dark mode (`src/index.css`) |
+| Components | shadcn/ui-style components on Radix UI (`src/components/ui/`, `components.json`) |
+| Charts | Recharts 3 (dashboard only, loaded on demand) |
+| Icons, toasts | Lucide React, Sonner |
+| Linting | ESLint 10 |
 
 ---
 
 ## ⚙️ Installation
 
 ### Prerequisites
-- Node.js and npm
+- Node.js 22.22 or newer, and npm
 - The EMS backend running (see the backend README), normally on http://localhost:5000
 
 ### Steps
@@ -85,7 +100,7 @@ Browser ── React app (http://localhost:5173)          ← this repository
    ```bash
    npm run dev
    ```
-3. Open http://localhost:5173.
+3. Open http://localhost:5173 and log in with an account from the backend.
 
 No `.env` file is needed. In development the app calls `/api/...` and Vite forwards it to the backend:
 
@@ -94,9 +109,7 @@ No `.env` file is needed. In development the app calls `/api/...` and Vite forwa
 | `EMS_API_TARGET` | shell, when starting `npm run dev` | `http://localhost:5000` | Where the development proxy sends `/api` (e.g. a backend on another port) |
 | `VITE_API_BASE_URL` | shell or `.env`, when building | `/api` | API address baked into a production build, e.g. `https://api.example.com/api` |
 
-The dev server always uses port **5173** (`strictPort`), because the backend only accepts browser requests from its `CLIENT_URL`, `http://localhost:5173`.
-
-**Why a proxy:** the browser only talks to `http://localhost:5173`. The login cookie and the backend's CORS and CSRF checks then work without hard-coding the backend address. Every request is sent with `credentials: "include"`, so the `HttpOnly` login cookie will be sent once login is built.
+The dev server always uses port **5173** (`strictPort`), because the backend only accepts browser requests from its `CLIENT_URL`, `http://localhost:5173`. `.env` files are git-ignored.
 
 ---
 
@@ -125,26 +138,47 @@ cd E:\Employee-Management-System-Frontend
 npm run dev
 ```
 
-The backend must have `CLIENT_URL=http://localhost:5173` in its `.env`; otherwise the browser blocks the API calls (CORS).
-
 ---
 
 ## 📁 Project Structure
 
 ```
-Employee-Management-System-Frontend/
-├── 📄 index.html          HTML page that loads src/main.jsx
-├── 📄 vite.config.js      Vite settings: React plugin, port 5173, /api proxy to the backend
-├── 📄 eslint.config.js    ESLint rules
-├── 📄 package.json        Scripts and dependencies
-├── 📂 public/             Static files (favicon, icons)
-├── 📂 src/
-│   ├── 📄 main.jsx        Starts React and renders <App />
-│   ├── 📄 App.jsx         Start page with the backend health check (replaced in T8)
-│   ├── 📂 api/
-│   │   └── 📄 health.js   GET /api/health: tells HTTP errors and "backend unreachable" apart
-│   ├── 📄 App.css, index.css
-│   └── 📂 assets/         Starter images
-└── 📂 docs/
-    └── 📄 PLAN.md         Frontend tasks and rules
+src/
+├── main.jsx, App.jsx        Start: Redux store, theme, router, toasts
+├── index.css                Tailwind + light/dark colour tokens
+├── app/                     Redux store, theme provider
+├── api/                     baseApi.js (RTK Query, session handling), health.js
+├── config/                  brand.js (name and wording), navigation.js (pages + permissions)
+├── routes/                  router.jsx, guards.jsx (session, auth, permission), lazyPages.js
+├── layouts/                 AppLayout, Sidebar, Header (user menu, theme, mobile drawer)
+├── pages/                   Login, forced password change, status pages
+├── features/
+│   ├── auth/                authApi, authSlice, useSession, ChangePasswordForm
+│   ├── dashboard/           DashboardPage (loads data, picks the dashboard), AdminDashboard,
+│   │                        HrDashboard, EmployeeDashboard, SharedSections, widgets
+│   ├── profile/             ProfilePage, profileApi, useOwnEmployee
+│   ├── employees/           list, details, create/edit form, employeesApi
+│   ├── attendance/          AttendancePage, TodayAttendanceCard, correction dialog
+│   ├── leave/               LeavePage, request and review dialogs
+│   ├── users/               UsersPage, account form
+│   └── roles/               RolesPage, RoleFormPage
+├── components/              Shared pieces (forms, tables, states, dialogs) and ui/ (shadcn-style)
+├── hooks/                   useListParams (filters in the URL)
+├── lib/                     apiError, format, validation (mirrors backend rules), permissions, theme
+└── assets/                  login-workplace.jpg (CC0, see docs/ASSETS.md)
 ```
+
+---
+
+## ✅ Manual test checklist (with real accounts)
+
+Run backend and frontend, then for **each role** (Super Admin, HR, Employee):
+
+1. Log in → lands on the dashboard for that role; reload the page → still logged in.
+2. The sidebar shows only that role's pages; opening another page's address shows "Access denied".
+3. Employee: clock in / out, request and cancel leave, edit contact details.
+4. HR: create an employee → log in as that employee → must set a new password first.
+5. HR: review leave, correct attendance, deactivate / reactivate an employee.
+6. Super Admin: create an HR account, edit a role, deactivate a custom role.
+7. Log out → back on the login page; the browser back button does not reopen the app.
+8. Switch light / dark mode; try a phone-sized window.

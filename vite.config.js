@@ -1,4 +1,6 @@
 import process from 'node:process'
+import { fileURLToPath, URL } from 'node:url'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -13,7 +15,13 @@ const apiTarget = process.env.EMS_API_TARGET || 'http://localhost:5000'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    // "@/..." means "src/..." (same alias as jsconfig.json and components.json).
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   server: {
     // The backend only accepts browser requests from its CLIENT_URL
     // (http://localhost:5173), so do not silently move to another port.
