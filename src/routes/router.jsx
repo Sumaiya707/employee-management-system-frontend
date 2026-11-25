@@ -16,12 +16,14 @@ import {
   EmployeesPage,
   ForcedPasswordPage,
   LeavePage,
+  LeaveTypesPage,
   ProfilePage,
   RoleFormPage,
   RolesPage,
   UsersPage,
+  WorkCalendarPage,
 } from './lazyPages'
-import { GuestOnly, HomeRedirect, RequireAuth, RequirePermission, SessionGate } from './guards'
+import { GuestOnly, HomeRedirect, RequireAuth, RequirePermission, RequireSuperAdmin, SessionGate } from './guards'
 
 function guarded(permission, element) {
   return <RequirePermission permission={permission}>{element}</RequirePermission>
@@ -58,6 +60,9 @@ export const router = createBrowserRouter([
               { path: 'leave', element: guarded('leave:view', <LeavePage />) },
               { path: 'departments', element: guarded('departments:view', <DepartmentsPage />) },
               { path: 'designations', element: guarded('designations:view', <DesignationsPage />) },
+              // Leave Setup: Super Admin only (HR has leave:manage but may not open these).
+              { path: 'leave-types', element: <RequireSuperAdmin><LeaveTypesPage /></RequireSuperAdmin> },
+              { path: 'work-calendar', element: <RequireSuperAdmin><WorkCalendarPage /></RequireSuperAdmin> },
               { path: 'users', element: guarded('users:view', <UsersPage />) },
               { path: 'roles', element: guarded('roles:view', <RolesPage />) },
               { path: 'roles/new', element: guarded('roles:manage', <RoleFormPage />) },

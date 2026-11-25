@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useSession } from '@/features/auth/useSession'
 import { useOwnEmployee } from '@/features/profile/useOwnEmployee'
 import { useListParams } from '@/hooks/useListParams'
-import { LEAVE_STATUS_LABELS, LEAVE_TYPE_LABELS, formatDate, fullName, labelFor } from '@/lib/format'
+import { LEAVE_STATUS_LABELS, formatDate, fullName } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { LeaveDetailsDialog } from './LeaveDetailsDialog'
 import { LeaveRequestDialog } from './LeaveRequestDialog'
@@ -46,7 +46,7 @@ function LeaveRow({ leave, showEmployee, canReview, onOpen }) {
           <span className="block text-xs text-muted-foreground">#{leave.employee ? leave.employee.employeeCode : ''}</span>
         </TableCell>
       ) : null}
-      <TableCell>{labelFor(LEAVE_TYPE_LABELS, leave.leaveType)}</TableCell>
+      <TableCell>{leave.leaveTypeName}</TableCell>
       <TableCell>
         {formatDate(leave.startDate)}
         {leave.endDate !== leave.startDate ? ' – ' + formatDate(leave.endDate) : ''}
@@ -65,7 +65,7 @@ function LeaveRow({ leave, showEmployee, canReview, onOpen }) {
             event.stopPropagation()
             onOpen()
           }}
-          aria-label={'Open ' + labelFor(LEAVE_TYPE_LABELS, leave.leaveType) + ' leave from ' + formatDate(leave.startDate)}
+          aria-label={'Open ' + leave.leaveTypeName + ' from ' + formatDate(leave.startDate)}
         >
           {buttonText}
           <ChevronRightIcon aria-hidden="true" />

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/input'
 import { normalizeError } from '@/lib/apiError'
-import { LEAVE_TYPE_LABELS, formatDate, formatDateTime, fullName, labelFor } from '@/lib/format'
+import { formatDate, formatDateTime, fullName, paidText } from '@/lib/format'
 import { useCancelLeaveMutation, useReviewLeaveMutation } from './leaveApi'
 
 // One leave request with the actions the user may take on it:
@@ -76,6 +76,8 @@ function Details({ leave, canReview, canCancel, onClose }) {
   // The details to show. The last three exist only for some requests.
   const detailItems = [
     { label: 'Status', value: <LeaveStatusBadge status={leave.status} /> },
+    // Empty (shown as "—") for old requests whose code has no leave type.
+    { label: 'Payment', value: paidText(leave.leaveTypeIsPaid) },
     { label: 'Days', value: leave.days + (leave.days === 1 ? ' day' : ' days') },
     { label: 'First day', value: formatDate(leave.startDate) },
     { label: 'Last day', value: formatDate(leave.endDate) },
@@ -95,7 +97,7 @@ function Details({ leave, canReview, canCancel, onClose }) {
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{labelFor(LEAVE_TYPE_LABELS, leave.leaveType)} leave</DialogTitle>
+        <DialogTitle>{leave.leaveTypeName}</DialogTitle>
         <DialogDescription>
           {fullName(leave.employee)} · #{leave.employee ? leave.employee.employeeCode : ''}
         </DialogDescription>

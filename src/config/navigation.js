@@ -8,8 +8,10 @@ import {
   BriefcaseBusinessIcon,
   Building2Icon,
   CalendarClockIcon,
+  CalendarCogIcon,
   CalendarDaysIcon,
   IdCardIcon,
+  ListChecksIcon,
   LayoutDashboardIcon,
   ShieldCheckIcon,
   UserCogIcon,
@@ -41,6 +43,15 @@ export const NAV_SECTIONS = [
     ],
   },
   {
+    // Leave policy: only the Super Admin (superAdminOnly), the same rule as the backend
+    // (middlewares/requireSuperAdmin.js). HR also has leave:manage, but does not see these.
+    title: 'Leave Setup',
+    items: [
+      { to: '/leave-types', label: 'Leave Types', icon: ListChecksIcon, permission: 'leave:manage', superAdminOnly: true },
+      { to: '/work-calendar', label: 'Work Calendar', icon: CalendarCogIcon, permission: 'leave:manage', superAdminOnly: true },
+    ],
+  },
+  {
     title: 'Administration',
     items: [
       { to: '/users', label: 'User Accounts', icon: UserCogIcon, permission: 'users:view' },
@@ -49,22 +60,36 @@ export const NAV_SECTIONS = [
   },
 ]
 
+// true if this user may open this page: they need its permission, and a
+// superAdminOnly page is only for the Super Admin.
+function canOpenItem(user, item) {
+  if (!user || !user.permissions) {
+    return false
+  }
+  if (!user.permissions.includes(item.permission)) {
+    return false
+  }
+  let isSuperAdmin = false
+  if (user.role && user.role.isSuperAdmin) {
+    isSuperAdmin = true
+  }
+  if (item.superAdminOnly && !isSuperAdmin) {
+    return false
+  }
+  return true
+}
+
 // The sections and items this user may see.
-// - An item is shown only if the user has its permission.
+// - An item is shown only if the user may open it (canOpenItem).
 // - A section is shown only if at least one of its items is shown.
 export function visibleNavigation(user, scope) {
-  let permissions = []
-  if (user && user.permissions) {
-    permissions = user.permissions
-  }
-
   const visibleSections = []
 
   for (const section of NAV_SECTIONS) {
     const visibleItems = []
 
     for (const item of section.items) {
-      if (permissions.includes(item.permission)) {
+      if (canOpenItem(user, item)) {
         // "self" users (Employee) see e.g. "My Attendance" instead of "Attendance".
         let label = item.label
         if (scope === 'self' && item.selfLabel) {
@@ -84,10 +109,9 @@ export function visibleNavigation(user, scope) {
 
 // Where to send a user after login: the dashboard, or the first page they may open.
 export function homePathFor(user) {
-  const permissions = (user && user.permissions) || []
   for (const section of NAV_SECTIONS) {
     for (const item of section.items) {
-      if (permissions.includes(item.permission)) {
+      if (canOpenItem(user, item)) {
         return item.to
       }
     }

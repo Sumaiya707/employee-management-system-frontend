@@ -109,6 +109,16 @@ export function RequirePermission({ permission, children }) {
   return children
 }
 
+// A page only the Super Admin may open (the Leave Setup pages). The backend
+// checks the same rule (middlewares/requireSuperAdmin.js).
+export function RequireSuperAdmin({ children }) {
+  const { isSuperAdmin } = useSession()
+  if (!isSuperAdmin) {
+    return <ForbiddenPage />
+  }
+  return children
+}
+
 export function HomeRedirect() {
   const { user } = useSession()
   return <Navigate to={homePathFor(user)} replace />

@@ -1,6 +1,6 @@
 import { EmptyState, ErrorState, LoadingRows } from '@/components/QueryState'
 import { LeaveStatusBadge } from '@/components/StatusBadges'
-import { LEAVE_TYPE_LABELS, formatDate, fullName, labelFor } from '@/lib/format'
+import { formatDate, fullName } from '@/lib/format'
 import { useListLeavesQuery } from './leaveApi'
 
 // A short list of leave requests for dashboards (GET /api/leaves, scoped by the backend).
@@ -18,7 +18,7 @@ export function RecentLeaveList({ params, showEmployee = false, emptyTitle = 'No
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
               {showEmployee ? fullName(leave.employee) + ' · ' : ''}
-              {labelFor(LEAVE_TYPE_LABELS, leave.leaveType)} leave
+              {leave.leaveTypeName}
             </p>
             <p className="truncate text-xs text-muted-foreground">
               {formatDate(leave.startDate)}
