@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSession } from '@/features/auth/useSession'
+import { LeaveBalanceTable } from '@/features/leave/LeaveBalanceTable'
 import { normalizeError } from '@/lib/apiError'
 import { EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, assignmentName, formatDate, formatDateTime, fullName, labelFor } from '@/lib/format'
 import { useGetEmployeeQuery, useResetEmployeePasswordMutation, useSetEmployeeStatusMutation } from './employeesApi'
@@ -27,7 +28,7 @@ function BackLink() {
 
 export default function EmployeeDetailPage() {
   const { id } = useParams()
-  const { can } = useSession()
+  const { can, scope } = useSession()
   const employeeQuery = useGetEmployeeQuery(id)
   const [setStatus, statusState] = useSetEmployeeStatusMutation()
   const [resetPassword] = useResetEmployeePasswordMutation()
@@ -165,6 +166,8 @@ export default function EmployeeDetailPage() {
               />
             </CardContent>
           </Card>
+          {/* The employee's leave balance, for users who can see everyone's leave (HR, Super Admin). */}
+          {can('leave:view') && scope === 'all' ? <LeaveBalanceTable employeeId={employee.id} /> : null}
         </div>
         <Card className="self-start">
           <CardHeader>

@@ -12,10 +12,10 @@ import { Input, NativeSelect, Textarea } from '@/components/ui/input'
 import { useListActiveLeaveTypesQuery } from '@/features/leaveTypes/leaveTypesApi'
 import { useGetWorkCalendarQuery } from '@/features/workCalendar/workCalendarApi'
 import { applyFieldErrors, normalizeError } from '@/lib/apiError'
-import { allowanceText, countDays, countWorkingDays, paidText } from '@/lib/format'
+import { allowanceText, balanceText, countDays, countWorkingDays, paidText } from '@/lib/format'
 import { fieldA11y } from '@/lib/form'
 import { requiredDate } from '@/lib/validation'
-import { useSubmitLeaveMutation } from './leaveApi'
+import { useGetLeaveBalancesQuery, useSubmitLeaveMutation } from './leaveApi'
 
 // Same rules as the backend's createLeaveSchema (the backend also checks the
 // 60-day limit, the allowed date window, the leave type and overlaps).
@@ -50,6 +50,15 @@ function RequestForm({ onDone, onCancel }) {
   // details and the number of working days while the employee fills in the form.
   const [leaveTypeCode, startDate, endDate] = useWatch({ control, name: ['leaveType', 'startDate', 'endDate'] })
 
+  // The year of the leave: the year of the first day ("2026-12-30" -> 2026),
+  // or this year while no first day is chosen yet.
+  let leaveYear = new Date().getFullYear()
+  if (startDate) {
+    leaveYear = Number(startDate.slice(0, 4))
+  }
+  // Your own leave balances in that year (the backend always gives your own).
+  const balances = useGetLeaveBalancesQuery({ year: leaveYear })
+
   // Leave can be requested only after the work calendar has been set up.
   // calendar.data is empty (undefined) while the calendar is still loading.
   const calendarReady = Boolean(calendar.data && calendar.data.configured)
@@ -70,20 +79,68 @@ function RequestForm({ onDone, onCancel }) {
   }
 
   // The text under the dates, e.g. "Total: 3 working days (weekend days and holidays are not counted)."
+  // requestedDays stays null until both dates are chosen.
   let totalText = 'Choose the first and last day of your leave.'
+  let requestedDays = null
   if (calendarReady) {
     // countWorkingDays needs only the holiday DATES, so we copy them into a simple list.
     const holidayDates = []
     for (const holiday of calendar.data.holidays) {
       holidayDates.push(holiday.date)
     }
-    const days = countWorkingDays(startDate, endDate, calendar.data.weekendDays, holidayDates)
-    if (days !== null) {
+    requestedDays = countWorkingDays(startDate, endDate, calendar.data.weekendDays, holidayDates)
+    if (requestedDays !== null) {
       let dayWord = ' working days'
-      if (days === 1) {
+      if (requestedDays === 1) {
         dayWord = ' working day'
       }
-      totalText = 'Total: ' + days + dayWord + ' (weekend days and holidays are not counted).'
+      totalText = 'Total: ' + requestedDays + dayWord + ' (weekend days and holidays are not counted).'
+    }
+  }
+
+  // The balance of the chosen leave type in that year, found by its code.
+  let chosenBalance = null
+  if (chosenType && balances.data) {
+    for (const row of balances.data.balances) {
+      if (row.code === chosenType.code) {
+        chosenBalance = row
+      }
+    }
+  }
+
+  // The balance line under the leave type, e.g. "Balance in 2026: 3 of 10 working days available (5 used, 2 pending)".
+  let balanceLine = null
+  if (chosenBalance) {
+    if (chosenBalance.allowanceRule === 'once_per_employment') {
+      balanceLine = 'Balance for your whole employment: ' + balanceText(chosenBalance)
+    } else {
+      balanceLine = 'Balance in ' + leaveYear + ': ' + balanceText(chosenBalance)
+    }
+  }
+
+  // Does the request cover two calendar years? ("2026" is not "2027")
+  let crossesYears = false
+  if (startDate && endDate && startDate.slice(0, 4) !== endDate.slice(0, 4)) {
+    crossesYears = true
+  }
+
+  // A reason why this request cannot be sent, or null when it can be sent.
+  // These are the same rules the backend checks again when the request arrives:
+  //   1. a "per year" leave type cannot cross from one year into the next
+  //   2. the request cannot need more days than are still available
+  //      (pending requests already reserve their days)
+  let balanceProblem = null
+  if (chosenType && chosenType.allowanceRule === 'per_year' && crossesYears) {
+    balanceProblem = chosenType.name + ' is counted per calendar year. Please send one request ending on 31 December and another starting on 1 January.'
+  } else if (chosenBalance && chosenBalance.remainingDays !== null && requestedDays !== null) {
+    if (requestedDays > chosenBalance.remainingDays) {
+      // A negative balance (after the allowance was lowered) means 0 days are available.
+      let availableDays = chosenBalance.remainingDays
+      if (availableDays < 0) {
+        availableDays = 0
+      }
+      balanceProblem =
+        'This request needs ' + requestedDays + ' working day(s), but only ' + availableDays + ' ' + chosenType.name + ' day(s) are available, so it cannot be submitted.'
     }
   }
 
@@ -102,9 +159,9 @@ function RequestForm({ onDone, onCancel }) {
 
   // The list has loaded, but the Super Admin has not created any active leave type yet.
   const noLeaveTypes = Boolean(leaveTypes.data && leaveTypes.data.length === 0)
-  // The Submit button works only when the calendar is set up AND leave types exist.
-  // (The backend checks the same things again when the request is sent.)
-  const canSubmit = calendarReady && !noLeaveTypes
+  // The Submit button works only when the calendar is set up, leave types exist
+  // AND there is no balance problem. (The backend checks the same things again.)
+  const canSubmit = calendarReady && !noLeaveTypes && balanceProblem === null
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -138,6 +195,7 @@ function RequestForm({ onDone, onCancel }) {
             {chosenType.description ? ' · ' + chosenType.description : ''}
           </p>
         ) : null}
+        {balanceLine ? <p className="-mt-2 text-[13px] text-muted-foreground">{balanceLine}</p> : null}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="startDate" label="First day" error={errors.startDate && errors.startDate.message} required>
@@ -150,6 +208,7 @@ function RequestForm({ onDone, onCancel }) {
         <p className="text-[13px] text-muted-foreground" aria-live="polite">
           {totalText}
         </p>
+        {balanceProblem ? <Alert variant="danger">{balanceProblem}</Alert> : null}
         <FormField id="reason" label="Reason" error={errors.reason && errors.reason.message} required>
           <Textarea rows={3} maxLength={500} {...fieldA11y('reason', errors.reason)} {...register('reason')} />
         </FormField>

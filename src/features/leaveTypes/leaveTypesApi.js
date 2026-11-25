@@ -37,18 +37,20 @@ export const leaveTypesApi = baseApi.injectEndpoints({
     }),
 
     // PATCH /api/leave-types/:id — the whole form; the code never changes.
-    // Leave requests show the leave type name, so their cached data is refreshed too.
+    // Leave requests show the leave type name, and balances use its allowance,
+    // so their cached data is refreshed too.
     updateLeaveType: build.mutation({
       query: ({ id, body }) => ({ url: '/leave-types/' + id, method: 'PATCH', body: body }),
       transformResponse: (response) => response.data.leaveType,
-      invalidatesTags: ['LeaveType', 'Leave'],
+      invalidatesTags: ['LeaveType', 'Leave', 'LeaveBalance'],
     }),
 
     // PATCH /api/leave-types/:id/status { isActive }
+    // Balances show only active leave types, so they are refreshed too.
     setLeaveTypeStatus: build.mutation({
       query: ({ id, isActive }) => ({ url: '/leave-types/' + id + '/status', method: 'PATCH', body: { isActive: isActive } }),
       transformResponse: (response) => response.data.leaveType,
-      invalidatesTags: ['LeaveType'],
+      invalidatesTags: ['LeaveType', 'LeaveBalance'],
     }),
   }),
 })

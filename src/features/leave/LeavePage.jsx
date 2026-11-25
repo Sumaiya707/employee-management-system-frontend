@@ -13,6 +13,7 @@ import { useOwnEmployee } from '@/features/profile/useOwnEmployee'
 import { useListParams } from '@/hooks/useListParams'
 import { LEAVE_STATUS_LABELS, formatDate, fullName } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { LeaveBalanceTable } from './LeaveBalanceTable'
 import { LeaveDetailsDialog } from './LeaveDetailsDialog'
 import { LeaveRequestDialog } from './LeaveRequestDialog'
 import { useListLeavesQuery } from './leaveApi'
@@ -87,6 +88,14 @@ export default function LeavePage() {
   const requestOpen = canRequest && searchParams.get('new') === '1'
   const ownEmployeeId = own.employee ? own.employee.id : null
 
+  // "My leave balance" is shown to employees (the table itself shows a short note
+  // when no employee record is linked). On the organisation view of HR and
+  // Super Admin it is shown only when their account has its own employee record.
+  let showOwnBalance = true
+  if (organisation && !ownEmployeeId) {
+    showOwnBalance = false
+  }
+
   function setRequestOpen(open) {
     setSearchParams(
       (current) => {
@@ -126,6 +135,11 @@ export default function LeavePage() {
           ) : null
         }
       />
+      {showOwnBalance ? (
+        <div className="mb-6">
+          <LeaveBalanceTable />
+        </div>
+      ) : null}
       <Card>
         <ListToolbar>
           <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-1 rounded-md bg-muted p-1">

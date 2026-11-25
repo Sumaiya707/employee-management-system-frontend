@@ -18,6 +18,7 @@ The frontend and the backend are separate repositories that make up **one** appl
 | T12b | Per-user permission overrides page (`GET/PATCH /api/users/:id/permissions`) | T5 | Not Started |
 | T12c | Departments and Designations pages; department and designation on the employee form, details, list (column + filter) and My Profile | T7e | Implemented |
 | T12d | Leave Types and Work Calendar pages (Super Admin only: `superAdminOnly` sidebar items, `RequireSuperAdmin` route guard); the leave request form loads active leave types, shows paid / unpaid and allowance, and counts working days | T7f | Implemented |
+| T12e | Leave balances: `LeaveBalanceTable` (My Leave, employee details for HR / Super Admin), balance line and checks in the leave request form (Submit disabled), balance and allowance check in the review dialog (Approve disabled, Reject available) | T7g | Implemented |
 
 **"Implemented" means built, linted and production-built.** Logged-in pages still need a manual run with real accounts for each role before they can be marked Tested (see the README checklist).
 
@@ -55,5 +56,4 @@ Self-service actions (clock in/out, request leave) are shown only when `GET /api
 | Activity log list endpoint (only dashboard sections exist) | Activity is shown on dashboards only; no Activity Log page |
 | Reports API (`reports:view` exists, no routes) | No Reports page |
 | Password reset by email / forgot password | No "Forgot password" link; administrators reset passwords |
-| Leave balances (allowance is not enforced yet) | The leave form shows each leave type's allowance as information only |
 | Attendance and leave numbers in `GET /api/dashboard` | Dashboard cards use list endpoints' `meta.total` instead |

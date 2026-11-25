@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/input'
 import { normalizeError } from '@/lib/apiError'
-import { formatDate, formatDateTime, fullName, paidText } from '@/lib/format'
-import { useCancelLeaveMutation, useReviewLeaveMutation } from './leaveApi'
+import { balanceText, formatDate, formatDateTime, fullName, paidText } from '@/lib/format'
+import { useCancelLeaveMutation, useGetLeaveBalancesQuery, useReviewLeaveMutation } from './leaveApi'
 
 // One leave request with the actions the user may take on it:
 //   canReview  approve / reject (leave:approve, organisation scope, not own)
@@ -60,6 +60,54 @@ function Details({ leave, canReview, canCancel, onClose }) {
   const showReview = canReview && pending
   const showCancel = canCancel && pending
 
+  // ---- The employee's balance, shown to the reviewer ----
+  // The year of the request: the year of its first day ("2026-05-04" -> 2026).
+  const leaveYear = Number(leave.startDate.slice(0, 4))
+  let employeeId
+  if (leave.employee) {
+    employeeId = leave.employee.id
+  }
+  // Loaded only while the request can be reviewed AND its employee is known
+  // (skip: true = do not load). Without an employeeId the backend would answer
+  // with the reviewer's OWN balance, so in that case nothing is loaded.
+  const balances = useGetLeaveBalancesQuery({ employeeId: employeeId, year: leaveYear }, { skip: !showReview || !employeeId })
+
+  // The balance of this request's leave type, found by its code.
+  // It is not found when the leave type is inactive or does not exist any more.
+  let reviewBalance = null
+  if (showReview && balances.data) {
+    for (const row of balances.data.balances) {
+      if (row.code === leave.leaveType) {
+        reviewBalance = row
+      }
+    }
+  }
+
+  // The balance line, and a reason why Approve is blocked (or null).
+  // This request is still pending, so its days are ALREADY inside pendingDays:
+  // approving only moves them from pending to used. Approving is blocked when
+  // approved + pending days are more than the current allowance, which shows as a
+  // remaining balance below zero. (The backend checks the same rule again.)
+  let balanceLine = null
+  let approveProblem = null
+  if (reviewBalance) {
+    if (reviewBalance.allowanceRule === 'once_per_employment') {
+      balanceLine = leave.leaveTypeName + ' balance for the whole employment: ' + balanceText(reviewBalance)
+    } else {
+      balanceLine = leave.leaveTypeName + ' balance in ' + leaveYear + ': ' + balanceText(reviewBalance)
+    }
+    if (reviewBalance.remainingDays !== null && reviewBalance.remainingDays < 0) {
+      const totalDays = reviewBalance.approvedDays + reviewBalance.pendingDays
+      const overDays = 0 - reviewBalance.remainingDays
+      approveProblem =
+        'This request cannot be approved: approved and pending days add up to ' + totalDays + ', which is ' + overDays +
+        ' more than the current allowance of ' + reviewBalance.allowanceDays +
+        '. You can reject this or another pending request, or ask the Super Admin to raise the allowance.'
+    }
+  }
+  // The balances have loaded, but this leave type is not among them.
+  const balanceMissing = showReview && Boolean(balances.data) && reviewBalance === null
+
   // Cancelling takes two clicks: "Cancel request", then "Yes, cancel request".
   const showCancelButton = showCancel && !confirmCancel
   const isConfirmingCancel = showCancel && confirmCancel
@@ -105,6 +153,9 @@ function Details({ leave, canReview, canCancel, onClose }) {
       <DialogBody className="flex flex-col gap-5">
         {actionError ? <Alert variant="danger">{actionError}</Alert> : null}
         <DetailList items={detailItems} />
+        {balanceLine ? <p className="text-[13px] text-muted-foreground">{balanceLine}</p> : null}
+        {balanceMissing ? <p className="text-[13px] text-muted-foreground">Balance not shown: this leave type is inactive or no longer exists.</p> : null}
+        {approveProblem ? <Alert variant="danger">{approveProblem}</Alert> : null}
         {showReview ? (
           <FormField id="review-note" label="Note to the employee" error={noteError} hint="Required when rejecting">
             <Textarea
@@ -141,7 +192,8 @@ function Details({ leave, canReview, canCancel, onClose }) {
               {isRejecting ? <Loader2Icon className="animate-spin" aria-hidden="true" /> : <XIcon aria-hidden="true" />}
               Reject
             </Button>
-            <Button onClick={() => submitReview('approved')} disabled={busy}>
+            {/* Approve is disabled when the balance check fails; Reject always stays available. */}
+            <Button onClick={() => submitReview('approved')} disabled={busy || approveProblem !== null}>
               {isApproving ? <Loader2Icon className="animate-spin" aria-hidden="true" /> : <CheckIcon aria-hidden="true" />}
               Approve
             </Button>

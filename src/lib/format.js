@@ -43,6 +43,23 @@ export function allowanceText(leaveType) {
   return leaveType.allowanceDays + dayWord + ' once per employment'
 }
 
+// One leave balance row (from GET /api/leaves/balances) as a short sentence, e.g.
+// "3 of 10 working days available (5 used, 2 pending)",
+// "1 working day(s) over the allowance of 10 (5 used, 6 pending)" or
+// "No fixed limit (4 used, 0 pending)".
+export function balanceText(row) {
+  const usedText = ' (' + row.approvedDays + ' used, ' + row.pendingDays + ' pending)'
+  if (row.remainingDays === null) {
+    return 'No fixed limit' + usedText
+  }
+  if (row.remainingDays < 0) {
+    // -1 becomes 1: "1 working day(s) over the allowance"
+    const overDays = 0 - row.remainingDays
+    return overDays + ' working day(s) over the allowance of ' + row.allowanceDays + usedText
+  }
+  return row.remainingDays + ' of ' + row.allowanceDays + ' working days available' + usedText
+}
+
 // "Paid" or "Unpaid". isPaid is null for old leave requests without a leave type.
 export function paidText(isPaid) {
   if (isPaid === true) {

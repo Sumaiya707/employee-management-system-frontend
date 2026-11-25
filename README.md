@@ -39,6 +39,7 @@
 | Departments, Designations | List with search and status filter; HR / Super Admin: add, edit, activate / deactivate (never delete). Employees with the view permission see a read-only list |
 | Attendance | Clock in / out (employees with a record); own or organisation records; HR correction with note |
 | Leave | Request with an active leave type (its payment type and allowance are shown), counted in working days; cancel own pending request; HR review (approve / reject with note) |
+| Leave balances | Table with allowance, used, pending and remaining per leave type and year (last / this / next year) on My Leave and, for HR / Super Admin, on the employee details page. The request form shows the available days and disables Submit when the request needs more days than are left, or a "per year" request crosses two years. The review dialog shows the balance and disables Approve when approved + pending days are over the current allowance (Reject stays available) |
 | Leave Types, Work Calendar | Super Admin only (HR and employees do not see them and get Forbidden by URL): add, edit, activate / deactivate leave types (paid / unpaid, allowance rule); choose weekend days and add / remove holidays. Leave cannot be requested until the work calendar is saved |
 | User Accounts | Super Admin: create, edit, activate / deactivate, reset password for HR and admin accounts |
 | Roles & Permissions | Super Admin: list, create custom roles, edit permissions and data scope, activate / deactivate custom roles |
