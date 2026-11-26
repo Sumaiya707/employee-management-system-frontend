@@ -12,7 +12,7 @@ import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, Dia
 import { Input, NativeSelect } from '@/components/ui/input'
 import { useListRolesQuery } from '@/features/roles/rolesApi'
 import { applyFieldErrors, normalizeError } from '@/lib/apiError'
-import { fullName } from '@/lib/format'
+import { STATUS_CHOICE_LABELS, fullName } from '@/lib/format'
 import { fieldA11y } from '@/lib/form'
 import { PASSWORD_HINT, emailField, nameField, strongPassword } from '@/lib/validation'
 import { useCreateUserMutation, useUpdateUserMutation } from './usersApi'
@@ -24,7 +24,11 @@ const baseFields = {
   roleId: z.string().min(1, 'Select a role'),
 }
 const createSchema = z.object({ ...baseFields, password: strongPassword })
-const editSchema = z.object(baseFields)
+// Editing also has the account status (Active, Resigned or Terminated).
+const editSchema = z.object({ ...baseFields, employmentStatus: z.enum(['active', 'resigned', 'terminated']) })
+
+// The hint under the Status dropdown.
+const STATUS_HINT = 'Resigned or Terminated blocks login at once and signs the person out. Active allows login again.'
 
 function UserForm({ user, isSelf, onDone, onCancel }) {
   const isEdit = Boolean(user)
@@ -48,7 +52,13 @@ function UserForm({ user, isSelf, onDone, onCancel }) {
       currentRoleId = user.role.id
     }
     schema = editSchema
-    startValues = { firstName: user.firstName, lastName: user.lastName, email: user.email, roleId: currentRoleId }
+    startValues = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      roleId: currentRoleId,
+      employmentStatus: user.employmentStatus || 'active',
+    }
     title = 'Edit ' + fullName(user)
     description = 'Role changes apply on the user’s next request.'
     submitText = 'Save changes'
@@ -60,6 +70,14 @@ function UserForm({ user, isSelf, onDone, onCancel }) {
     setError,
     formState: { errors, dirtyFields, isSubmitting },
   } = useForm({ resolver: zodResolver(schema), defaultValues: startValues })
+
+  // The Status dropdown is shown only when editing an HR account (or another
+  // non-Super Admin account). Super Admin accounts always stay Active, so they
+  // get no Status choice (the backend refuses it too).
+  let showStatus = false
+  if (isEdit && user.role && !user.role.isSuperAdmin) {
+    showStatus = true
+  }
 
   // The roles to choose from: every active role except Employee.
   const roleOptions = []
@@ -99,7 +117,7 @@ function UserForm({ user, isSelf, onDone, onCancel }) {
       onDone()
     } catch (error) {
       const problem = normalizeError(error)
-      const shown = applyFieldErrors(problem.fieldErrors, setError, ['firstName', 'lastName', 'email', 'password', 'roleId'])
+      const shown = applyFieldErrors(problem.fieldErrors, setError, ['firstName', 'lastName', 'email', 'password', 'roleId', 'employmentStatus'])
       if (!shown) setFormError(problem.message)
     }
   }
@@ -144,6 +162,17 @@ function UserForm({ user, isSelf, onDone, onCancel }) {
             </NativeSelect>
           )}
         </FormField>
+        {showStatus ? (
+          <FormField id="u-status" label="Status" error={errors.employmentStatus && errors.employmentStatus.message} hint={STATUS_HINT} required>
+            <NativeSelect {...fieldA11y('u-status', errors.employmentStatus, STATUS_HINT)} {...register('employmentStatus')}>
+              {Object.entries(STATUS_CHOICE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </NativeSelect>
+          </FormField>
+        ) : null}
         {!isEdit ? (
           <FormField id="u-password" label="Temporary password" error={errors.password && errors.password.message} hint={PASSWORD_HINT} required>
             <PasswordInput autoComplete="new-password" {...fieldA11y('u-password', errors.password, PASSWORD_HINT)} {...register('password')} />

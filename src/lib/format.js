@@ -7,9 +7,19 @@ export const EMPLOYMENT_TYPE_LABELS = {
   intern: 'Intern',
 }
 
+// Labels for every status badge. "On leave" is never chosen by hand: the backend
+// shows it automatically (currentStatus) while an approved leave covers today.
 export const EMPLOYMENT_STATUS_LABELS = {
   active: 'Active',
   on_leave: 'On leave',
+  resigned: 'Resigned',
+  terminated: 'Terminated',
+}
+
+// The three statuses HR or Super Admin can choose in a form (dropdowns and filters).
+// Resigned and Terminated block login; Active allows it.
+export const STATUS_CHOICE_LABELS = {
+  active: 'Active',
   resigned: 'Resigned',
   terminated: 'Terminated',
 }

@@ -3,7 +3,7 @@
 // requests and own recent activity.
 import { PlusIcon } from 'lucide-react'
 import { Link } from 'react-router'
-import { ActiveBadge, EmploymentStatusBadge } from '@/components/StatusBadges'
+import { EmploymentStatusBadge } from '@/components/StatusBadges'
 import { Button } from '@/components/ui/button'
 import { TodayAttendanceCard } from '@/features/attendance/TodayAttendanceCard'
 import { useSession } from '@/features/auth/useSession'
@@ -25,7 +25,7 @@ function AttendanceSection({ canClock }) {
   )
 }
 
-// One label with its value, e.g. "Job title" / "Developer".
+// One label with its value, e.g. "Designation" / "Software Engineer".
 function DetailItem({ label, children }) {
   return (
     <div>
@@ -64,14 +64,13 @@ function EmploymentSection({ record, canOpenProfile }) {
     <SectionCard title="My employment" className="xl:col-span-2" action={profileLink}>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
         <DetailItem label="Employee ID">#{record.employeeCode}</DetailItem>
-        <DetailItem label="Job title">{record.jobTitle}</DetailItem>
+        {/* The position: the designation name ("—" for an older record without one). */}
+        <DetailItem label="Designation">{record.designation ? record.designation.name : '—'}</DetailItem>
         <DetailItem label="Employment type">{labelFor(EMPLOYMENT_TYPE_LABELS, record.employmentType)}</DetailItem>
         <DetailItem label="Joined">{formatDate(record.joiningDate)}</DetailItem>
+        {/* currentStatus shows "On leave" automatically during approved leave. */}
         <BadgeItem label="Job status">
-          <EmploymentStatusBadge status={record.employmentStatus} />
-        </BadgeItem>
-        <BadgeItem label="Record">
-          <ActiveBadge isActive={record.isActive} />
+          <EmploymentStatusBadge status={record.currentStatus} />
         </BadgeItem>
       </dl>
     </SectionCard>

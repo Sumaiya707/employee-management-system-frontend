@@ -1,7 +1,7 @@
 import { DetailList } from '@/components/DetailList'
 import { PageHeader } from '@/components/PageHeader'
 import { ErrorState, LoadingBlock } from '@/components/QueryState'
-import { ActiveBadge, EmploymentStatusBadge } from '@/components/StatusBadges'
+import { EmploymentStatusBadge } from '@/components/StatusBadges'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Alert } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -50,7 +50,8 @@ export default function ProfilePage() {
                 <p className="truncate text-sm text-muted-foreground">{account.email}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Badge variant="accent">{account.role ? account.role.name : ''}</Badge>
-                  {employee ? <EmploymentStatusBadge status={employee.employmentStatus} /> : null}
+                  {/* currentStatus shows "On leave" automatically during approved leave. */}
+                  {employee ? <EmploymentStatusBadge status={employee.currentStatus} /> : null}
                 </div>
               </div>
             </CardContent>
@@ -63,7 +64,6 @@ export default function ProfilePage() {
                   <CardTitle>Employment details</CardTitle>
                   <CardDescription>Managed by HR. Contact HR if something is wrong.</CardDescription>
                 </div>
-                <ActiveBadge isActive={employee.isActive} activeText="Record active" inactiveText="Record inactive" />
               </CardHeader>
               <CardContent>
                 <DetailList
@@ -71,7 +71,6 @@ export default function ProfilePage() {
                     { label: 'Employee ID', value: '#' + employee.employeeCode },
                     { label: 'Department', value: employee.department ? employee.department.name : null },
                     { label: 'Designation', value: employee.designation ? employee.designation.name : null },
-                    { label: 'Job title', value: employee.jobTitle },
                     { label: 'Employment type', value: labelFor(EMPLOYMENT_TYPE_LABELS, employee.employmentType) },
                     { label: 'Joining date', value: formatDate(employee.joiningDate) },
                     { label: 'Gender', value: labelFor(GENDER_LABELS, employee.gender) },

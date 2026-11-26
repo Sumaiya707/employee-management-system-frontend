@@ -1,36 +1,33 @@
-import { KeyRoundIcon, MoreHorizontalIcon, PencilIcon, PlusIcon, PowerIcon } from 'lucide-react'
+import { KeyRoundIcon, MoreHorizontalIcon, PencilIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { FilterSelect, ListToolbar, SearchBox } from '@/components/ListToolbar'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/QueryState'
 import { ResetPasswordDialog } from '@/components/ResetPasswordDialog'
-import { ActiveBadge } from '@/components/StatusBadges'
+import { ActiveBadge, EmploymentStatusBadge } from '@/components/StatusBadges'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useSession } from '@/features/auth/useSession'
 import { useListRolesQuery } from '@/features/roles/rolesApi'
 import { useListParams } from '@/hooks/useListParams'
-import { normalizeError } from '@/lib/apiError'
 import { formatDate, formatDateTime, fullName } from '@/lib/format'
 import { UserFormDialog } from './UserFormDialog'
-import { useListUsersQuery, useResetUserPasswordMutation, useSetUserStatusMutation } from './usersApi'
+import { useListUsersQuery, useResetUserPasswordMutation } from './usersApi'
 
 const DEFAULTS = { search: '', role: '', status: '', sort: '-createdAt' }
 
 // One row of the accounts table, with its "⋯" actions menu.
 //   isSelf           this row is the logged-in user's own account
-//   canUpdate        may edit accounts and reset passwords (users:update)
-//   canChangeStatus  may activate / deactivate accounts (users:status)
-//   onEdit, onResetPassword, onChangeStatus  open the matching dialog for this account
-function UserRow({ account, isSelf, canUpdate, canChangeStatus, onEdit, onResetPassword, onChangeStatus }) {
+//   canUpdate        may edit accounts (including the status) and reset passwords (users:update)
+//   onEdit, onResetPassword  open the matching dialog for this account
+function UserRow({ account, isSelf, canUpdate, onEdit, onResetPassword }) {
   // Employee accounts are managed together with their employee record.
   const isEmployeeAccount = account.role && account.role.key === 'employee'
 
@@ -61,7 +58,14 @@ function UserRow({ account, isSelf, canUpdate, canChangeStatus, onEdit, onResetP
         <Badge variant={roleBadgeVariant}>{roleName}</Badge>
       </TableCell>
       <TableCell>
-        <ActiveBadge isActive={account.isActive} />
+        {/* HR and Super Admin accounts show their status (Active, Resigned, Terminated).
+            Employee accounts show only whether login is allowed: their status is
+            on their employee record. */}
+        {isEmployeeAccount ? (
+          <ActiveBadge isActive={account.isActive} activeText="Login allowed" inactiveText="Login blocked" />
+        ) : (
+          <EmploymentStatusBadge status={account.employmentStatus} />
+        )}
       </TableCell>
       <TableCell>
         {account.mustChangePassword ? <Badge variant="warning">Temporary</Badge> : <span className="text-muted-foreground">Set by user</span>}
@@ -93,15 +97,6 @@ function UserRow({ account, isSelf, canUpdate, canChangeStatus, onEdit, onResetP
                   Reset password
                 </DropdownMenuItem>
               ) : null}
-              {canChangeStatus && !isSelf ? (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem destructive={account.isActive} onSelect={onChangeStatus}>
-                    <PowerIcon aria-hidden="true" />
-                    {account.isActive ? 'Deactivate' : 'Activate'}
-                  </DropdownMenuItem>
-                </>
-              ) : null}
               {isSelf ? (
                 <DropdownMenuItem asChild>
                   <Link to="/profile">
@@ -125,11 +120,9 @@ export default function UsersPage() {
   const [searchResetCount, setSearchResetCount] = useState(0)
   const users = useListUsersQuery({ ...params, limit: 15 })
   const roles = useListRolesQuery({ limit: 100, sort: 'name' })
-  const [setStatus, statusState] = useSetUserStatusMutation()
   const [resetPassword] = useResetUserPasswordMutation()
 
   const [formState, setFormState] = useState({ open: false, user: null })
-  const [statusTarget, setStatusTarget] = useState(null)
   const [resetTarget, setResetTarget] = useState(null)
 
   const filtered = Boolean(params.search || params.role || params.status)
@@ -139,24 +132,6 @@ export default function UsersPage() {
   if (roles.data) {
     for (const role of roles.data.items) {
       roleOptions.push({ value: role.key, label: role.name })
-    }
-  }
-
-  // Title of the activate / deactivate confirmation dialog, e.g. "Deactivate Sara Lee?"
-  let dialogTitle = ''
-  if (statusTarget && statusTarget.isActive) {
-    dialogTitle = 'Deactivate ' + fullName(statusTarget) + '?'
-  } else if (statusTarget) {
-    dialogTitle = 'Activate ' + fullName(statusTarget) + '?'
-  }
-
-  async function confirmStatus() {
-    try {
-      const updated = await setStatus({ id: statusTarget.id, isActive: !statusTarget.isActive }).unwrap()
-      toast.success(updated.isActive ? 'Account activated' : 'Account deactivated')
-      setStatusTarget(null)
-    } catch (error) {
-      toast.error('Status not changed', { description: normalizeError(error).message })
     }
   }
 
@@ -197,8 +172,8 @@ export default function UsersPage() {
             onChange={(value) => setParam('status', value)}
             options={[
               { value: '', label: 'All statuses' },
-              { value: 'active', label: 'Active' },
-              { value: 'inactive', label: 'Inactive' },
+              { value: 'active', label: 'Login allowed' },
+              { value: 'inactive', label: 'Login blocked' },
             ]}
           />
           <FilterSelect
@@ -245,10 +220,8 @@ export default function UsersPage() {
                     account={account}
                     isSelf={account.id === me.id}
                     canUpdate={can('users:update')}
-                    canChangeStatus={can('users:status')}
                     onEdit={() => setFormState({ open: true, user: account })}
                     onResetPassword={() => setResetTarget(account)}
-                    onChangeStatus={() => setStatusTarget(account)}
                   />
                 ))}
               </TableBody>
@@ -263,20 +236,6 @@ export default function UsersPage() {
         user={formState.user}
         isSelf={Boolean(formState.user && formState.user.id === me.id)}
         onOpenChange={(open) => !open && setFormState({ open: false, user: null })}
-      />
-      <ConfirmDialog
-        open={Boolean(statusTarget)}
-        onOpenChange={(open) => !open && setStatusTarget(null)}
-        title={dialogTitle}
-        description={
-          statusTarget && statusTarget.isActive
-            ? 'The account is blocked from logging in and all of its sessions end immediately.'
-            : 'The account can log in again.'
-        }
-        confirmText={statusTarget && statusTarget.isActive ? 'Deactivate' : 'Activate'}
-        destructive={Boolean(statusTarget && statusTarget.isActive)}
-        isWorking={statusState.isLoading}
-        onConfirm={confirmStatus}
       />
       <ResetPasswordDialog
         open={Boolean(resetTarget)}

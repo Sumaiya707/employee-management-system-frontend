@@ -20,7 +20,7 @@ import { Input, NativeSelect, Textarea } from '@/components/ui/input'
 import { useListDepartmentsQuery } from '@/features/departments/departmentsApi'
 import { useListDesignationsQuery } from '@/features/designations/designationsApi'
 import { applyFieldErrors, normalizeError } from '@/lib/apiError'
-import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, fullName, toDateInput } from '@/lib/format'
+import { EMPLOYMENT_TYPE_LABELS, GENDER_LABELS, STATUS_CHOICE_LABELS, fullName, toDateInput } from '@/lib/format'
 import { errorAt, fieldA11y } from '@/lib/form'
 import {
   PASSWORD_HINT,
@@ -46,27 +46,29 @@ const editSchema = z.object({
   email: emailField,
   gender: choice(GENDER_LABELS, 'Select a gender'),
   phone: requiredPhone,
-  jobTitle: z.string().trim().min(1, 'Job title is required').max(100, 'Job title must be at most 100 characters'),
-  // Optional: '' means "not assigned" (sent to the backend as null).
+  // Department is optional: '' means "not assigned" (sent to the backend as null).
   department: z.string(),
-  designation: z.string(),
+  // Designation is required: it is the employee's position. '' (nothing chosen)
+  // shows the message below and the form is not sent.
+  designation: z.string().min(1, 'Select a designation'),
   employmentType: choice(EMPLOYMENT_TYPE_LABELS, 'Select an employment type'),
-  employmentStatus: choice(EMPLOYMENT_STATUS_LABELS, 'Select a job status'),
+  // Only Active, Resigned or Terminated ("On leave" is shown automatically).
+  employmentStatus: choice(STATUS_CHOICE_LABELS, 'Select a job status'),
   joiningDate: requiredDate('Joining date'),
   address: addressField,
   dateOfBirth: optionalPastDate,
   emergencyContact: emergencyContactField,
 })
 
-// Create form rules: all edit rules, plus three fields that exist only when
-// creating (Employee ID, temporary password, active record).
+// Create form rules: all edit rules, plus two fields that exist only when
+// creating (Employee ID, temporary password). Login access is not a separate
+// field: it follows the job status.
 const createSchema = editSchema.extend({
   employeeCode: z
     .string()
     .trim()
     .regex(/^[0-9]{1,20}$/, 'Employee ID may contain only digits (at most 20)'),
   password: strongPassword,
-  isActive: z.boolean(),
 })
 
 const EMPTY = {
@@ -75,10 +77,8 @@ const EMPTY = {
   lastName: '',
   email: '',
   password: '',
-  isActive: true,
   gender: '',
   phone: '',
-  jobTitle: '',
   department: '',
   designation: '',
   employmentType: '',
@@ -87,6 +87,15 @@ const EMPTY = {
   address: '',
   dateOfBirth: '',
   emergencyContact: { name: '', phone: '', relationship: '' },
+}
+
+// The stored job status as a dropdown value. An old stored "on_leave" (from
+// before "On leave" became automatic) is shown as "active", the only matching choice.
+function statusChoiceFrom(employmentStatus) {
+  if (employmentStatus === 'resigned' || employmentStatus === 'terminated') {
+    return employmentStatus
+  }
+  return 'active'
 }
 
 function valuesFrom(employee) {
@@ -105,11 +114,10 @@ function valuesFrom(employee) {
     email: employee.email,
     gender: employee.gender || '',
     phone: employee.phone || '',
-    jobTitle: employee.jobTitle || '',
     department: departmentId,
     designation: designationId,
     employmentType: employee.employmentType || '',
-    employmentStatus: employee.employmentStatus || 'active',
+    employmentStatus: statusChoiceFrom(employee.employmentStatus),
     joiningDate: toDateInput(employee.joiningDate),
     address: employee.address || '',
     dateOfBirth: toDateInput(employee.dateOfBirth),
@@ -118,6 +126,9 @@ function valuesFrom(employee) {
 }
 
 const FORM_FIELDS = Object.keys(EMPTY)
+
+// The hint under the job status dropdown.
+const STATUS_HINT = 'Resigned or Terminated blocks login. On leave is shown automatically from approved leave.'
 
 function OptionList({ labels, placeholder }) {
   return (
@@ -217,7 +228,6 @@ function EmployeeForm({ employee }) {
     lastName: errorAt(errors, 'lastName'),
     gender: errorAt(errors, 'gender'),
     dateOfBirth: errorAt(errors, 'dateOfBirth'),
-    jobTitle: errorAt(errors, 'jobTitle'),
     department: errorAt(errors, 'department'),
     designation: errorAt(errors, 'designation'),
     joiningDate: errorAt(errors, 'joiningDate'),
@@ -253,9 +263,9 @@ function EmployeeForm({ employee }) {
           changes[key] = values[key]
         }
         if ('dateOfBirth' in changes && changes.dateOfBirth === '') changes.dateOfBirth = null
-        // An empty department / designation choice removes it (null).
+        // An empty department choice removes it (null). The designation can never
+        // be empty here: the form rules above require one.
         if ('department' in changes && changes.department === '') changes.department = null
-        if ('designation' in changes && changes.designation === '') changes.designation = null
         if (Object.keys(changes).length === 0) {
           navigate('/employees/' + employee.id)
           return
@@ -267,7 +277,6 @@ function EmployeeForm({ employee }) {
         const body = { ...values }
         if (body.dateOfBirth === '') delete body.dateOfBirth
         if (body.department === '') body.department = null
-        if (body.designation === '') body.designation = null
         const created = await createEmployee(body).unwrap()
         toast.success('Employee created', { description: 'Login account ' + created.email + ' must change the temporary password at first login.' })
         navigate('/employees/' + created.id)
@@ -324,18 +333,15 @@ function EmployeeForm({ employee }) {
                 ))}
               </NativeSelect>
             </FormField>
-            <FormField id="designation" label="Designation" error={errorText.designation} hint={designationHint}>
+            <FormField id="designation" label="Designation" error={errorText.designation} hint={designationHint} required>
               <NativeSelect {...fieldA11y('designation', errorText.designation, designationHint)} {...register('designation')}>
-                <option value="">{emptyChoiceText(designations, 'Loading designations…', 'No designation')}</option>
+                <option value="">{emptyChoiceText(designations, 'Loading designations…', 'Select a designation…')}</option>
                 {designationOptions.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.name}
                   </option>
                 ))}
               </NativeSelect>
-            </FormField>
-            <FormField id="jobTitle" label="Job title" error={errorText.jobTitle} required>
-              <Input {...fieldA11y('jobTitle', errorText.jobTitle)} {...register('jobTitle')} />
             </FormField>
             <FormField id="joiningDate" label="Joining date" error={errorText.joiningDate} required>
               <Input type="date" {...fieldA11y('joiningDate', errorText.joiningDate)} {...register('joiningDate')} />
@@ -345,9 +351,10 @@ function EmployeeForm({ employee }) {
                 <OptionList labels={EMPLOYMENT_TYPE_LABELS} placeholder="Select…" />
               </NativeSelect>
             </FormField>
-            <FormField id="employmentStatus" label="Job status" error={errorText.employmentStatus} hint="Does not affect login access" required>
-              <NativeSelect {...fieldA11y('employmentStatus', errorText.employmentStatus, 'Does not affect login access')} {...register('employmentStatus')}>
-                <OptionList labels={EMPLOYMENT_STATUS_LABELS} />
+            {/* The job status decides login access: Resigned or Terminated blocks it. */}
+            <FormField id="employmentStatus" label="Job status" error={errorText.employmentStatus} hint={STATUS_HINT} required>
+              <NativeSelect {...fieldA11y('employmentStatus', errorText.employmentStatus, STATUS_HINT)} {...register('employmentStatus')}>
+                <OptionList labels={STATUS_CHOICE_LABELS} />
               </NativeSelect>
             </FormField>
           </FormSection>
@@ -378,13 +385,6 @@ function EmployeeForm({ employee }) {
               <FormField id="password" label="Temporary password" error={errorText.password} hint={PASSWORD_HINT} required>
                 <PasswordInput autoComplete="new-password" {...fieldA11y('password', errorText.password, PASSWORD_HINT)} {...register('password')} />
               </FormField>
-              <div className="flex items-start gap-2.5 pt-7">
-                <input id="isActive" type="checkbox" className="mt-0.5 size-4" {...register('isActive')} />
-                <label htmlFor="isActive" className="text-sm">
-                  Active record
-                  <span className="block text-xs text-muted-foreground">Allows the employee to log in.</span>
-                </label>
-              </div>
             </FormSection>
           ) : null}
         </CardContent>

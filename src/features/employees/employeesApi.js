@@ -5,7 +5,7 @@ import { baseApi, listResult, toQueryString } from '@/api/baseApi'
 
 export const employeesApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
-    // GET /api/employees?page&limit&search&status&employmentStatus&sort
+    // GET /api/employees?page&limit&search&employmentStatus&departmentId&sort
     listEmployees: build.query({
       query: (params) => '/employees' + toQueryString(params),
       transformResponse: listResult,
@@ -31,13 +31,6 @@ export const employeesApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [{ type: 'Employee', id: id }, { type: 'Employee', id: 'LIST' }, 'Dashboard'],
     }),
 
-    // PATCH /api/employees/:id/status { isActive }
-    setEmployeeStatus: build.mutation({
-      query: ({ id, isActive }) => ({ url: '/employees/' + id + '/status', method: 'PATCH', body: { isActive: isActive } }),
-      transformResponse: (response) => response.data.employee,
-      invalidatesTags: (result, error, { id }) => [{ type: 'Employee', id: id }, { type: 'Employee', id: 'LIST' }, 'Dashboard', 'User'],
-    }),
-
     // PATCH /api/employees/:id/password { newPassword, confirmPassword }
     resetEmployeePassword: build.mutation({
       query: ({ id, newPassword, confirmPassword }) => ({
@@ -55,6 +48,5 @@ export const {
   useGetEmployeeQuery,
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
-  useSetEmployeeStatusMutation,
   useResetEmployeePasswordMutation,
 } = employeesApi

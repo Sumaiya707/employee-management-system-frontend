@@ -35,13 +35,13 @@
 | Navigation | Sidebar (desktop) and drawer (mobile) show only pages allowed by the user's permissions; every route is guarded too |
 | Dashboards | Super Admin (`admin`), HR (`organisation`) and Employee (`personal`) layouts from `GET /api/dashboard` |
 | My Profile | Account and employment details; edit own phone, address, emergency contact; change password |
-| Employees | List with search, filters (incl. department), sorting, pagination; details; create (with login account); edit, incl. department and designation; activate / deactivate; reset password |
+| Employees | List with search, filters (incl. department), sorting, pagination; details; create (with login account); edit, incl. department (optional), designation (required: the position; there is no separate job title) and job status (Active, Resigned or Terminated: Resigned and Terminated block login); On leave shown automatically from approved leave; reset password |
 | Departments, Designations | List with search and status filter; HR / Super Admin: add, edit, activate / deactivate (never delete). Employees with the view permission see a read-only list |
 | Attendance | Clock in / out (employees with a record); own or organisation records; HR correction with note |
 | Leave | Request with an active leave type (its payment type and allowance are shown), counted in working days; cancel own pending request; HR review (approve / reject with note) |
 | Leave balances | Table with allowance, used, pending and remaining per leave type and year (last / this / next year) on My Leave and, for HR / Super Admin, on the employee details page. The request form shows the available days and disables Submit when the request needs more days than are left, or a "per year" request crosses two years. The review dialog shows the balance and disables Approve when approved + pending days are over the current allowance (Reject stays available) |
 | Leave Types, Work Calendar | Super Admin only (HR and employees do not see them and get Forbidden by URL): add, edit, activate / deactivate leave types (paid / unpaid, allowance rule); choose weekend days and add / remove holidays. Leave cannot be requested until the work calendar is saved |
-| User Accounts | Super Admin: create, edit, activate / deactivate, reset password for HR and admin accounts |
+| User Accounts | Super Admin: create, edit, reset password for HR and admin accounts; set an HR account to Active, Resigned or Terminated (Resigned and Terminated block login). Super Admin accounts always stay Active |
 | Roles & Permissions | Super Admin: list, create custom roles, edit permissions and data scope, activate / deactivate custom roles |
 | Theme | Light, dark and system mode, remembered in the browser |
 
@@ -181,7 +181,7 @@ Run backend and frontend, then for **each role** (Super Admin, HR, Employee):
 2. The sidebar shows only that role's pages; opening another page's address shows "Access denied".
 3. Employee: clock in / out, request and cancel leave, edit contact details.
 4. HR: create an employee → log in as that employee → must set a new password first.
-5. HR: review leave, correct attendance, deactivate / reactivate an employee.
-6. Super Admin: create an HR account, edit a role, deactivate a custom role.
+5. HR: review leave, correct attendance, set an employee to Resigned (login blocked) and back to Active (login restored).
+6. Super Admin: create an HR account, set it to Terminated and back to Active, edit a role, deactivate a custom role.
 7. Log out → back on the login page; the browser back button does not reopen the app.
 8. Switch light / dark mode; try a phone-sized window.

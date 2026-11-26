@@ -19,18 +19,11 @@ export const usersApi = baseApi.injectEndpoints({
       invalidatesTags: ['User', 'Role', 'Dashboard'],
     }),
 
-    // PATCH /api/users/:id — firstName, lastName, email, roleId (only the changes)
+    // PATCH /api/users/:id — firstName, lastName, email, roleId, employmentStatus (only the changes)
     updateUser: build.mutation({
       query: ({ id, changes }) => ({ url: '/users/' + id, method: 'PATCH', body: changes }),
       transformResponse: (response) => response.data.user,
       invalidatesTags: ['User', 'Role', 'Dashboard'],
-    }),
-
-    // PATCH /api/users/:id/status { isActive }
-    setUserStatus: build.mutation({
-      query: ({ id, isActive }) => ({ url: '/users/' + id + '/status', method: 'PATCH', body: { isActive: isActive } }),
-      transformResponse: (response) => response.data.user,
-      invalidatesTags: ['User', 'Dashboard'],
     }),
 
     // PATCH /api/users/:id/password { newPassword, confirmPassword }

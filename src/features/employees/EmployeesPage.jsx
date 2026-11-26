@@ -5,7 +5,7 @@ import { FilterSelect, ListToolbar, SearchBox } from '@/components/ListToolbar'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
 import { EmptyState, ErrorState, LoadingRows } from '@/components/QueryState'
-import { ActiveBadge, EmploymentStatusBadge } from '@/components/StatusBadges'
+import { EmploymentStatusBadge } from '@/components/StatusBadges'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -13,10 +13,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useSession } from '@/features/auth/useSession'
 import { useListDepartmentsQuery } from '@/features/departments/departmentsApi'
 import { useListParams } from '@/hooks/useListParams'
-import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_TYPE_LABELS, formatDate, fullName, labelFor } from '@/lib/format'
+import { STATUS_CHOICE_LABELS, EMPLOYMENT_TYPE_LABELS, formatDate, fullName, labelFor } from '@/lib/format'
 import { useListEmployeesQuery } from './employeesApi'
 
-const DEFAULTS = { search: '', status: '', employmentStatus: '', departmentId: '', sort: 'employeeCode' }
+const DEFAULTS = { search: '', employmentStatus: '', departmentId: '', sort: 'employeeCode' }
 
 const SORT_OPTIONS = [
   { value: 'employeeCode', label: 'Sort: Employee ID' },
@@ -37,7 +37,7 @@ export default function EmployeesPage() {
   const canViewDepartments = can('departments:view')
   const departments = useListDepartmentsQuery({ limit: 100, sort: 'name' }, { skip: !canViewDepartments })
 
-  const filtered = Boolean(params.search || params.status || params.employmentStatus || params.departmentId)
+  const filtered = Boolean(params.search || params.employmentStatus || params.departmentId)
 
   // Choices for the Department filter: "All departments", then every department.
   const departmentOptions = [{ value: '', label: 'All departments' }]
@@ -48,7 +48,7 @@ export default function EmployeesPage() {
   }
 
   function clearFilters() {
-    clear(['search', 'status', 'employmentStatus', 'departmentId'])
+    clear(['search', 'employmentStatus', 'departmentId'])
     setSearchResetCount((count) => count + 1)
   }
 
@@ -72,22 +72,11 @@ export default function EmployeesPage() {
         <ListToolbar onClear={clearFilters} showClear={filtered}>
           <SearchBox key={searchResetCount} value={params.search} onChange={(value) => setParam('search', value)} placeholder="Search ID, name or email" label="Search employees" />
           <FilterSelect
-            id="filter-status"
-            label="Record status"
-            value={params.status}
-            onChange={(value) => setParam('status', value)}
-            options={[
-              { value: '', label: 'All records' },
-              { value: 'active', label: 'Active records' },
-              { value: 'inactive', label: 'Inactive records' },
-            ]}
-          />
-          <FilterSelect
             id="filter-employment"
             label="Employment status"
             value={params.employmentStatus}
             onChange={(value) => setParam('employmentStatus', value)}
-            options={[{ value: '', label: 'Any job status' }, ...Object.entries(EMPLOYMENT_STATUS_LABELS).map(([value, label]) => ({ value, label }))]}
+            options={[{ value: '', label: 'Any job status' }, ...Object.entries(STATUS_CHOICE_LABELS).map(([value, label]) => ({ value, label }))]}
           />
           {canViewDepartments ? (
             <FilterSelect
@@ -128,11 +117,10 @@ export default function EmployeesPage() {
                   <TableHead>Employee ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Department</TableHead>
-                  <TableHead>Job title</TableHead>
+                  <TableHead>Designation</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Job status</TableHead>
                   <TableHead>Joined</TableHead>
-                  <TableHead>Login</TableHead>
                   <TableHead>
                     <span className="sr-only">Open</span>
                   </TableHead>
@@ -158,15 +146,14 @@ export default function EmployeesPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{employee.department ? employee.department.name : '—'}</TableCell>
-                    <TableCell>{employee.jobTitle}</TableCell>
+                    {/* The position: the designation name ("—" for an older record without one). */}
+                    <TableCell>{employee.designation ? employee.designation.name : '—'}</TableCell>
                     <TableCell className="text-muted-foreground">{labelFor(EMPLOYMENT_TYPE_LABELS, employee.employmentType)}</TableCell>
                     <TableCell>
-                      <EmploymentStatusBadge status={employee.employmentStatus} />
+                      {/* currentStatus shows "On leave" automatically during approved leave. */}
+                      <EmploymentStatusBadge status={employee.currentStatus} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(employee.joiningDate)}</TableCell>
-                    <TableCell>
-                      <ActiveBadge isActive={employee.isActive} activeText="Enabled" inactiveText="Disabled" />
-                    </TableCell>
                     <TableCell className="text-right">
                       <ChevronRightIcon className="ml-auto size-4 text-muted-foreground" aria-hidden="true" />
                     </TableCell>

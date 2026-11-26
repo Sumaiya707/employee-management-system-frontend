@@ -3,22 +3,22 @@
 import { CalendarClockIcon, CalendarDaysIcon, UserCheckIcon, UserPlusIcon, UsersIcon, UserXIcon } from 'lucide-react'
 import { useSession } from '@/features/auth/useSession'
 import { RecentLeaveList } from '@/features/leave/RecentLeaveList'
-import { EMPLOYMENT_STATUS_LABELS, EMPLOYMENT_TYPE_LABELS } from '@/lib/format'
+import { EMPLOYMENT_TYPE_LABELS, STATUS_CHOICE_LABELS } from '@/lib/format'
 import { useOpenAttendanceCount, usePendingLeaveCount } from './useCounts'
 import { SectionCard, StatCard, StatGrid, ViewAllLink } from './cards'
 import { CountBarChart } from './charts'
 import { BreakdownList, RecentHiresList } from './lists'
 
-// Turns { active: 3, on_leave: 1, ... } into chart rows: [{ label: 'Active', value: 3 }, ...]
-// Every status is listed, with 0 when the backend sent no number for it.
+// Turns { active: 3, resigned: 1, terminated: 0 } into chart rows: [{ label: 'Active', value: 3 }, ...]
+// Every status that can be chosen is listed, with 0 when the backend sent no number for it.
 function makeEmploymentStatusRows(countsByStatus) {
   const rows = []
-  for (const statusKey of Object.keys(EMPLOYMENT_STATUS_LABELS)) {
+  for (const statusKey of Object.keys(STATUS_CHOICE_LABELS)) {
     let count = 0
     if (countsByStatus && countsByStatus[statusKey]) {
       count = countsByStatus[statusKey]
     }
-    rows.push({ label: EMPLOYMENT_STATUS_LABELS[statusKey], value: count })
+    rows.push({ label: STATUS_CHOICE_LABELS[statusKey], value: count })
   }
   return rows
 }
@@ -65,8 +65,8 @@ export function WorkforceSection({ employees, canOpenEmployees }) {
 
   return (
     <div className="grid gap-4 xl:grid-cols-5">
-      <SectionCard title="Employment status" description="Active employee records by job status" className="xl:col-span-3">
-        <CountBarChart rows={makeEmploymentStatusRows(employees.byEmploymentStatus)} caption="Active employee records by employment status" />
+      <SectionCard title="Employment status" description="All employee records by job status" className="xl:col-span-3">
+        <CountBarChart rows={makeEmploymentStatusRows(employees.byEmploymentStatus)} caption="All employee records by job status" />
       </SectionCard>
       <SectionCard title="Recent hires" description="Latest joining dates" className="xl:col-span-2" action={viewAllLink}>
         <RecentHiresList hires={employees.recentHires} canOpen={canOpenEmployees} />

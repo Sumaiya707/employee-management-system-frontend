@@ -19,6 +19,8 @@ The frontend and the backend are separate repositories that make up **one** appl
 | T12c | Departments and Designations pages; department and designation on the employee form, details, list (column + filter) and My Profile | T7e | Implemented |
 | T12d | Leave Types and Work Calendar pages (Super Admin only: `superAdminOnly` sidebar items, `RequireSuperAdmin` route guard); the leave request form loads active leave types, shows paid / unpaid and allowance, and counts working days | T7f | Implemented |
 | T12e | Leave balances: `LeaveBalanceTable` (My Leave, employee details for HR / Super Admin), balance line and checks in the leave request form (Submit disabled), balance and allowance check in the review dialog (Approve disabled, Reject available) | T7g | Implemented |
+| T12f | Employment status decides login: job status dropdown with Active / Resigned / Terminated (employee form; HR accounts in the Edit account dialog, not for Super Admin accounts); Activate / Deactivate buttons and the "Record status" filter removed; badges show `currentStatus` (On leave automatic) on the employee list, details, My Profile and dashboards | T7h | Implemented |
+| T12g | Job title removed: the employee form has Department (optional) and Designation (required, "Select a designation"); the designation name is shown where the job title was (employee list column, details header, employee dashboard, recent hires); My Profile and details keep their Designation row | T7i | Implemented |
 
 **"Implemented" means built, linted and production-built.** Logged-in pages still need a manual run with real accounts for each role before they can be marked Tested (see the README checklist).
 

@@ -30,11 +30,13 @@ export function RecentHiresList({ hires, canOpen }) {
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{fullName(hire)}</p>
               <p className="truncate text-xs text-muted-foreground">
-                #{hire.employeeCode} · {hire.jobTitle}
+                {/* Employee ID and position (the designation name, if one is assigned). */}
+                #{hire.employeeCode}
+                {hire.designation ? ' · ' + hire.designation.name : ''}
               </p>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
-              <EmploymentStatusBadge status={hire.employmentStatus} />
+              <EmploymentStatusBadge status={hire.currentStatus} />
               <span className="text-xs text-muted-foreground">Joined {formatDate(hire.joiningDate)}</span>
             </div>
           </>
